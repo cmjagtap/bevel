@@ -1,0 +1,58 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: warehouse-net-ca
+  namespace: warehouse-net
+  annotations:
+    fluxcd.io/automated: "false"
+spec:
+  interval: 1m
+  releaseName: warehouse-net-ca
+  chart:
+    spec:
+      interval: 1m
+      sourceRef:
+        kind: GitRepository
+        name: flux-dev
+        namespace: flux-dev
+      chart: platforms/hyperledger-fabric/charts/fabric-ca-server  
+  values:
+    metadata:
+      namespace: warehouse-net
+      images:
+        alpineutils: ghcr.io/hyperledger/bevel-alpine:latest
+        ca: ghcr.io/hyperledger/bevel-fabric-ca:latest
+    deployment:
+      annotations:
+    annotations:  
+      service:
+        - example1: example2
+      pvc:
+ 
+    server:
+      name: ca
+      tlsstatus: true
+      admin: warehouse-admin 
+  
+    storage:
+      storageclassname: warehouse-bevel-storageclass
+      storagesize: 512Mi
+    vault:
+      role: vault-role
+      address: http://a2b62cfc6ed514bcbbb77908d294b9f3-885673975.us-east-1.elb.amazonaws.com:20001
+      authpath: devwarehouse
+      secretcert: secretsv2/data/warehouse/peerOrganizations/warehouse-net/ca?ca.warehouse-net-cert.pem
+      secretkey: secretsv2/data/warehouse/peerOrganizations/warehouse-net/ca?warehouse-net-CA.key
+      secretadminpass: secretsv2/data/warehouse/credentials/warehouse-net/ca/warehouse?user
+      serviceaccountname: vault-auth
+      type: hashicorp
+      imagesecretname: regcred
+    service:
+      servicetype: ClusterIP
+      ports:
+        tcp:
+          clusteripport: 7054
+    proxy:
+      provider: haproxy
+      type: peer
+      external_url_suffix: org5proxy.blockchaincloudpoc.com
