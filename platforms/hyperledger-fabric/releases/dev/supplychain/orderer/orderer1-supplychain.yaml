@@ -1,0 +1,77 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: supplychain-orderer1
+  namespace: supplychain-net
+  annotations:
+    fluxcd.io/automated: "false"
+spec:
+  interval: 1m
+  releaseName: supplychain-orderer1
+  chart:
+    spec:
+      interval: 1m
+      sourceRef:
+        kind: GitRepository
+        name: flux-local
+        namespace: flux-local
+      chart: platforms/hyperledger-fabric/charts/fabric-orderernode
+  values:
+    metadata:
+      namespace: supplychain-net
+      network:
+        version: 2.5.4
+      images:
+        orderer: ghcr.io/hyperledger/bevel-fabric-orderer:2.5.4
+        alpineutils: ghcr.io/hyperledger/bevel-alpine:latest
+    annotations:  
+      service:
+        - example1: example2
+      pvc:
+      deployment:
+    orderer:
+      name: orderer1
+      loglevel: info
+      localmspid: supplychainMSP
+      tlsstatus: true
+      keepaliveserverinterval: 10s
+      ordererAddress: orderer1.supplychain-net:7050
+
+    consensus:
+      name: raft
+
+    storage:
+      storageclassname: supplychain-bevel-storageclass
+      storagesize: 512Mi  
+
+    service:
+      servicetype: ClusterIP
+      ports:
+        grpc:
+          clusteripport: 7050
+        metrics: 
+          enabled: False
+          clusteripport: 9443
+
+    vault:
+      address: http://a2b62cfc6ed514bcbbb77908d294b9f3-885673975.us-east-1.elb.amazonaws.com:20001
+      role: vault-role
+      authpath: localsupplychain
+      type: hashicorp
+      secretprefix: secretsv2/data/supplychain/ordererOrganizations/supplychain-net/orderers/orderer1.supplychain-net
+      imagesecretname: regcred
+      serviceaccountname: vault-auth
+
+    proxy:
+      provider: none
+      external_url_suffix: develop.local.com
+
+    config:
+      pod:
+        resources:
+          limits:
+            memory: 512M
+            cpu: 1
+          requests:
+            memory: 512M
+            cpu: 0.25
